@@ -1,0 +1,8 @@
+1. Goto Pastefy and Login
+2. Goto https://pastefy.app/apikeys
+3. Add api key
+4. Paste the Api Key into the .env file
+4.1) rename .env to txt first THEN paste the Api key
+4.2) then rename the file to .env again
+5. Run the .Bat file
+You're all set!

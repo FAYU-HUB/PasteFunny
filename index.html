@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pastefy Bulk Uploader</title>
+
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --accent: #ff1a1a;
+      --text: #ffcccc;
+      --drop-bg: rgba(20,0,0,0.6);
+      --output-bg: rgba(15,15,15,0.9);
+      --error: #ff7777;
+      --success: #00c853;
+    }
+
+    html,body {
+      margin:0;
+      font-family:Arial,Segoe UI,Inter,Consolas,monospace;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    .container {
+      max-width:1100px;
+      margin:20px auto;
+      padding:20px;
+    }
+
+    header {
+      display:flex;
+      gap:14px;
+      align-items:center;
+    }
+
+    .logo {
+      width:60px;
+      height:60px;
+      border-radius:10px;
+      overflow:hidden;
+      border:2px solid rgba(255,0,0,0.12);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#080808;
+    }
+
+    .logo img {
+      width:76%;
+      height:76%;
+      object-fit:contain;
+    }
+
+    h1 {
+      margin:0;
+      font-size:1.4rem;
+      color:var(--accent);
+      text-shadow:0 0 8px rgba(255,0,0,0.12);
+    }
+
+    #rainbowRow {
+      margin-top:12px;
+      background:#111;
+      border-left:4px solid var(--accent);
+      padding:12px;
+      border-radius:10px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    button {
+      border:none;
+      padding:8px 14px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:700;
+      background:var(--accent);
+      color:#fff;
+    }
+
+    button.ghost {
+      background:transparent;
+      border:1px solid rgba(255,255,255,0.1);
+      color:var(--accent);
+    }
+
+    #dropzone {
+      margin-top:18px;
+      height:220px;
+      border-radius:14px;
+      border:3px dashed var(--accent);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:var(--drop-bg);
+      color:#ffbfbf;
+      font-size:18px;
+      transition:0.18s;
+    }
+
+    #dropzone.dragover {
+      transform:scale(1.02);
+      border-color:var(--accent);
+      box-shadow:0 0 28px rgba(255,0,0,0.12);
+    }
+
+    .controls-row {
+      display:flex;
+      gap:10px;
+      align-items:center;
+      margin-top:12px;
+      flex-wrap:wrap;
+    }
+
+    #fileList {
+      display:none;
+      margin-top:12px;
+      background:#111;
+      padding:12px;
+      border-radius:10px;
+      border-left:4px solid var(--accent);
+    }
+
+    .file-item {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:8px;
+      border-radius:8px;
+      background:rgba(255,0,0,0.03);
+      margin-bottom:8px;
+    }
+
+    .file-name {
+      flex:1;
+      color:#ffbfbf;
+      font-weight:700;
+    }
+
+    .progress-square {
+      width:160px;
+      height:10px;
+      background:#2b0b0b;
+      border-radius:8px;
+      overflow:hidden;
+    }
+
+    .progress-fill {
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg,var(--accent),#ff6b6b);
+    }
+
+    #output {
+      margin-top:16px;
+      background:var(--output-bg);
+      padding:14px;
+      border-radius:12px;
+      border-left:4px solid var(--accent);
+      min-height:110px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.4);
+      white-space:pre-wrap;
+    }
+
+    .result-row {
+      display:flex;
+      gap:12px;
+      align-items:center;
+      padding:10px;
+      margin-top:8px;
+      background:rgba(0,0,0,0.25);
+      border-radius:8px;
+    }
+
+    .result-filename {
+      font-weight:700;
+      color:var(--accent);
+    }
+
+    .result-link {
+      flex:1;
+      color:var(--text);
+    }
+
+    .copy-btn {
+      padding:6px 12px;
+      background:var(--accent);
+      color:white;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+    }
+
+    .copy-btn.copied {
+      background:var(--success);
+    }
+
+    .error-text {
+      color:var(--error);
+      font-weight:600;
+      margin-top:6px;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <header>
+      <div class="logo">
+        <img src="/mnt/data/9ded26a2-11c9-4fed-91f5-7ceace518d6b.png">
+      </div>
+      <div>
+        <h1>Pastefy Bulk Uploader</h1>
+        <div style="font-size:13px;color:#ffbdbd;margin-top:6px">Drag files or folders (.txt / .lua)</div>
+      </div>
+    </header>
+
+    <!-- 🌈 RAINBOW MODE CONTROLS -->
+    <div id="rainbowRow">
+      <button id="rainbowBtn">Enable Rainbow Accent</button>
+
+      <div style="display:flex;align-items:center;gap:8px;">
+        <label style="font-size:13px;color:#ddd;">Speed</label>
+        <input type="range" id="rainbowSpeed" min="1" max="25" value="10">
+      </div>
+    </div>
+
+    <div id="dropzone">Drop files or folders here</div>
+
+    <div class="controls-row">
+      <button id="downloadBtn" class="ghost">Download Output</button>
+      <button id="clearBtn" class="ghost">Clear Output</button>
+    </div>
+
+    <div id="fileList"></div>
+
+    <div id="output">Waiting for uploads...</div>
+
+  </div>
+
+<script>
+/* ============================
+   RAINBOW ACCENT MODE
+   ============================ */
+let rainbowActive = false;
+let rainbowHue = 0;
+let rainbowTimer = null;
+const defaultAccent = "#ff1a1a";
+
+const rainbowBtn = document.getElementById("rainbowBtn");
+const speedSlider = document.getElementById("rainbowSpeed");
+
+function startRainbow() {
+  if (rainbowActive) return;
+
+  rainbowActive = true;
+  rainbowBtn.textContent = "Disable Rainbow Accent";
+
+  function loop() {
+    if (!rainbowActive) return;
+
+    rainbowHue = (rainbowHue + speedSlider.value * 0.5) % 360;
+    const c = `hsl(${rainbowHue}, 100%, 55%)`;
+
+    document.documentElement.style.setProperty("--accent", c);
+
+    rainbowTimer = requestAnimationFrame(loop);
+  }
+
+  loop();
+}
+
+function stopRainbow() {
+  rainbowActive = false;
+  cancelAnimationFrame(rainbowTimer);
+  document.documentElement.style.setProperty("--accent", defaultAccent);
+  rainbowBtn.textContent = "Enable Rainbow Accent";
+}
+
+rainbowBtn.addEventListener("click", () => {
+  rainbowActive ? stopRainbow() : startRainbow();
+});
+
+// speed slider updates instantly
+speedSlider.addEventListener("input", () => {
+  // Automatically updates intensity speed on next frame
+});
+
+/* ============================
+   FILE FILTERING (.txt / .lua)
+   UPLOAD SYSTEM
+   FOLDER RECURSION
+   ============================ */
+
+const ALLOWED = [".txt", ".lua"];
+
+const dropzone = document.getElementById("dropzone");
+const fileListBox = document.getElementById("fileList");
+const outputBox = document.getElementById("output");
+
+dropzone.addEventListener("dragover", e => {
+  e.preventDefault();
+  dropzone.classList.add("dragover");
+});
+
+dropzone.addEventListener("dragleave", () => {
+  dropzone.classList.remove("dragover");
+});
+
+dropzone.addEventListener("drop", async (e) => {
+  e.preventDefault();
+  dropzone.classList.remove("dragover");
+
+  appendOutput("Scanning folder...");
+  const items = [...e.dataTransfer.items];
+  const files = [];
+
+  for (const item of items) {
+    const entry = item.webkitGetAsEntry && item.webkitGetAsEntry();
+    if (entry) {
+      await traverseEntry(entry, files);
+    } else {
+      const f = item.getAsFile();
+      if (f) {
+        handleFile(f, files);
+      }
+    }
+  }
+
+  if (files.length === 0) {
+    appendError("No valid .txt or .lua files found.");
+    return;
+  }
+
+  displayFileList(files);
+  for (let i = 0; i < files.length; i++) {
+    await uploadFile(files[i], i);
+  }
+
+  appendOutput("All uploads finished.");
+});
+
+function traverseEntry(entry, files) {
+  return new Promise((resolve) => {
+    if (entry.isFile) {
+      entry.file(file => {
+        handleFile(file, files);
+        resolve();
+      });
+    } else if (entry.isDirectory) {
+      const reader = entry.createReader();
+      reader.readEntries(async (entries) => {
+        for (const ent of entries) await traverseEntry(ent, files);
+        resolve();
+      });
+    } else {
+      resolve();
+    }
+  });
+}
+
+function handleFile(file, files) {
+  const lower = file.name.toLowerCase();
+  const valid = ALLOWED.some(ext => lower.endsWith(ext));
+
+  if (!valid) {
+    alert("Unsupported file type: " + file.name);
+    appendError("Unsupported file type: " + file.name);
+    return;
+  }
+  files.push(file);
+}
+
+function displayFileList(files) {
+  fileListBox.innerHTML = "";
+  fileListBox.style.display = "block";
+  files.forEach((file, i) => {
+    fileListBox.innerHTML += `
+      <div class="file-item">
+        <div class="file-name">${escape(file.name)}</div>
+        <div class="progress-square"><div id="fill-${i}" class="progress-fill"></div></div>
+      </div>`;
+  });
+}
+
+function uploadFile(file, idx) {
+  appendOutput("Uploading: " + file.name);
+
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/upload");
+
+    xhr.upload.onprogress = (e) => {
+      if (!e.lengthComputable) return;
+      const pct = Math.round((e.loaded / e.total) * 100);
+      const fill = document.getElementById(`fill-${idx}`);
+      if (fill) fill.style.width = pct + "%";
+    };
+
+    xhr.onload = () => {
+      let json = { filename:file.name, raw:"ERROR" };
+      try { json = JSON.parse(xhr.responseText); } catch {}
+
+      if (json.raw !== "ERROR") {
+        appendResult(json.filename, json.raw);
+      } else {
+        appendError("Error uploading: " + file.name);
+      }
+      resolve();
+    };
+
+    xhr.onerror = () => {
+      appendError("Upload failed: " + file.name);
+      resolve();
+    };
+
+    const fd = new FormData();
+    fd.append("file", file, file.name);
+    xhr.send(fd);
+  });
+}
+
+/* ============================
+   OUTPUT FUNCTIONS
+   ============================ */
+
+function appendOutput(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  outputBox.appendChild(div);
+  outputBox.scrollTop = outputBox.scrollHeight;
+}
+
+function appendError(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  div.className = "error-text";
+  outputBox.appendChild(div);
+  outputBox.scrollTop = outputBox.scrollHeight;
+}
+
+function appendResult(filename, raw) {
+  const row = document.createElement("div");
+  row.className = "result-row";
+
+  row.innerHTML = `
+    <div class="result-filename">${escape(filename)}</div>
+    <div class="result-link">${escape(raw)}</div>
+    <button class="copy-btn">Copy</button>
+  `;
+
+  const btn = row.querySelector(".copy-btn");
+  btn.addEventListener("click", async () => {
+    await navigator.clipboard.writeText(raw);
+    btn.classList.add("copied");
+    btn.textContent = "Copied";
+    setTimeout(() => {
+      btn.classList.remove("copied");
+      btn.textContent = "Copy";
+    }, 1200);
+  });
+
+  outputBox.appendChild(row);
+  outputBox.scrollTop = outputBox.scrollHeight;
+}
+
+/* ============================
+   DOWNLOAD & CLEAR
+   ============================ */
+
+document.getElementById("clearBtn").addEventListener("click", () => {
+  outputBox.innerHTML = "Waiting for uploads...";
+  fileListBox.innerHTML = "";
+  fileListBox.style.display = "none";
+});
+
+document.getElementById("downloadBtn").addEventListener("click", () => {
+  const rows = [...document.querySelectorAll(".result-row")];
+  if (!rows.length) return alert("No results to download.");
+
+  const content = rows.map(r => {
+    const name = r.querySelector(".result-filename").textContent;
+    const link = r.querySelector(".result-link").textContent;
+    return `${name} - ${link}`;
+  }).join("\n");
+
+  const blob = new Blob([content], { type:"text/plain" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "paste_results.txt";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+/* ============================
+   UTIL
+   ============================ */
+
+function escape(text){
+  return text.replace(/[&<>"']/g, m => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  }[m]));
+}
+
+</script>
+</body>
+</html>
